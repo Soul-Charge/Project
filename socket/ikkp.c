@@ -1,10 +1,12 @@
 /* knock-knock 服务器程序 */
+/* 运行系统windows */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <WinSock2.h>
-#define MESSAGELEN 100
+#include <windows.h>
+#define MESSAGELEN 600
 
 int open_listener_socket(void);
 void bind_to_port_ipv4(int socket, int port, char* ipv4_str);
@@ -26,6 +28,7 @@ int main(void)
     WSADATA wsa;
     WSAStartup(MAKEWORD(2,2), &wsa);
 
+    /* open socket */
     listener_d = open_listener_socket();
     /* bind */
     bind_to_port_ipv4(listener_d, port, ipv4_str);
@@ -41,24 +44,31 @@ int main(void)
         /* begin */
         say(connect_d, "Knock! Knock!\n");
         read_in(connect_d, recv_meg, MESSAGELEN);
-        if (strcmp(recv_meg, "Who's there?") != 0)
+        printf("来自客户端的输入:%s\n", recv_meg);
+
+        /* check first enquiry */
+        if (strcmp(recv_meg, "Who's there?") != 0) //if reply is valid, explain and close
         {
             say(connect_d, "Do you know this joke?\n");
             say(connect_d, "You should say: Who's there?\n");
             closesocket(connect_d);
+            empty_str(recv_meg);
         }
-        empty_str(recv_meg);
-
-        say(connect_d, "Oscar\n");
-        read_in(connect_d, recv_meg, MESSAGELEN);
-        if (strcmp(recv_meg, "Oscar who?") != 0)
+        else // the reply is "Who's there?"
         {
-            say(connect_d, "You should say: Oscar who?\n");
-            closesocket(connect_d);
+            say(connect_d, "Oscar\n");
+            read_in(connect_d, recv_meg, MESSAGELEN);
+            /* check second enquiry */
+            if (strcmp(recv_meg, "Oscar who?") != 0)
+            {
+                say(connect_d, "You should say: Oscar who?\n");
+                closesocket(connect_d);
+                empty_str(recv_meg);
+            }
+            else
+                say(connect_d, "Oscar silly question, you get a silly answer.\n");
         }
-        empty_str(recv_meg);
 
-        say(connect_d, "Oscar silly question, you get a silly answer.");
         /* close */
         closesocket(connect_d);
     }
@@ -96,6 +106,7 @@ int my_accept(int socket)
     int connect_d = accept(socket, (struct sockaddr*)&client_addr, &address_size);
     if (connect_d == -1)
         error("无法打开副套接字");
+    return connect_d;
 }
 
 /* 通过给定的套接字发出消息 */
@@ -103,7 +114,9 @@ int say(int socket, char* s)
 {
     int result = send(socket, s, strlen(s) ,0);
     if (result == -1)
-        fprintf(stderr, "向客户端发送信息时出错\n", strerror(errno));
+    {
+        fprintf(stderr, "向客户端发送信息时出错:%s, %d\n", strerror(errno), WSAGetLastError());
+    }
     return result;
 }
 
@@ -114,17 +127,19 @@ int read_in(int socket, char* buf, unsigned int len)
     char* s = buf;
     int slen = len;
     int c = recv(socket, s, slen, 0);
+    if (c == 0)
+        buf[0] = '\0';
+
     while ((c > 0) && (s[c-1] != '\n'))
     {
         s += c;
         slen -= c;
+        c = recv(socket, s, slen, 0);
     }
     if (c < 0)
         return c;
-    else if (c == 0)
-        buf[0] = '\0';
     else
-        s[c-1] = '\0';
+        s[c-2] = '\0'; // instead '\r'
     return len - slen;
 }
 

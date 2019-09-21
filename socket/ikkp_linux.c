@@ -1,12 +1,13 @@
 /* knock-knock 服务器程序 */
-/* 运行系统windows */
+/* 运行系统Linux */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <WinSock2.h>
-#include <windows.h>
-#define MESSAGELEN 600
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#define MESSAGELEN 300
 
 int open_listener_socket(void);
 void bind_to_port_ipv4(int socket, int port, char* ipv4_str);
@@ -20,13 +21,8 @@ int main(void)
 {
     int listener_d; //服务器主套接字
     int port = 2333;
-    char ipv4_str[] = "192.168.1.101";
+    char ipv4_str[] = "127.0.0.1";
     char recv_meg[MESSAGELEN] = {0};
-
-    /* initialize */
-    system("chcp 65001"); //更换控制台编码为utf-8
-    WSADATA wsa;
-    WSAStartup(MAKEWORD(2,2), &wsa);
 
     /* open socket */
     listener_d = open_listener_socket();
@@ -51,7 +47,7 @@ int main(void)
         {
             say(connect_d, "Do you know this joke?\n");
             say(connect_d, "You should say: Who's there?\n");
-            closesocket(connect_d);
+            close(connect_d);
             empty_str(recv_meg);
         }
         else // the reply is "Who's there?"
@@ -63,7 +59,7 @@ int main(void)
             if (strcmp(recv_meg, "Oscar who?") != 0)
             {
                 say(connect_d, "You should say: Oscar who?\n");
-                closesocket(connect_d);
+                close(connect_d);
                 empty_str(recv_meg);
             }
             else
@@ -71,7 +67,7 @@ int main(void)
         }
 
         /* close */
-        closesocket(connect_d);
+        close(connect_d);
     }
     return 0;
 }
@@ -116,7 +112,7 @@ int say(int socket, char* s)
     int result = send(socket, s, strlen(s) ,0);
     if (result == -1)
     {
-        fprintf(stderr, "向客户端发送信息时出错:%s, %d\n", strerror(errno), WSAGetLastError());
+        fprintf(stderr, "向客户端发送信息时出错:%s\n", strerror(errno));
     }
     return result;
 }

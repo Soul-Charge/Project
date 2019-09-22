@@ -23,7 +23,7 @@ int main(void)
     int listener_d; //服务器主套接字
     int port = 2333;
     pid_t pid;
-    char ipv4_str[] = "127.0.0.1";
+    char ipv4_str[] = "192.168.1.103";
     char recv_meg[MESSAGELEN] = {0};
 
     /* open socket */
@@ -76,8 +76,9 @@ int main(void)
                 say(connect_d, "Oscar silly question, you get a silly answer.\n");
         }
 
-        /* close */
+        /* child-progress: close socket and itself */
         close(connect_d);
+        exit(0);
     }
     return 0;
 }

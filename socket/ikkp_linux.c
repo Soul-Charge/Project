@@ -5,7 +5,6 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/socket.h>
-#include <sys/types.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #define MESSAGELEN 300
@@ -22,7 +21,6 @@ int main(void)
 {
     int listener_d; //服务器主套接字
     int port = 2333;
-    pid_t pid;
     char ipv4_str[] = "192.168.1.103";
     char recv_meg[MESSAGELEN] = {0};
 
@@ -39,8 +37,7 @@ int main(void)
     {
         /* accept */
         int connect_d = my_accept(listener_d);
-        pid = fork();
-        if (pid == 0)
+        if (!fork())
             close(listener_d);
         else
         {
